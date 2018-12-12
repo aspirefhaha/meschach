@@ -95,6 +95,10 @@ int main(int argc,char ** argv)
   init_Rxyz();
   MAT * rx = Rx(M_PI / 3);
   m_output(rx);
+  //VEC * pk = v_get(3);
+  //v_output(pk);
+  //mv_mlt(rx,pk,rx);
+  //m_output(rx);
   char pname[]="good";
   m_save(fp,rx,&pname);
   fclose(fp);
@@ -105,5 +109,6 @@ int main(int argc,char ** argv)
   Real nor = v_norm2(tv);
   v_output(tv);
   printf("norm result:%lf\n",nor);
+
   return 0;
 }

@@ -18,7 +18,7 @@ static VEC * svRnormal;
 static Real sMue;
 static Real sFaie;
 static Real sR;     //
-static Real sr;
+static Real sr;   //normalize value of svr
 static Real sB;     //latitude
 static Real sLambda;  //longitude
 static VEC * svMovemente;
@@ -37,12 +37,26 @@ static Real sFai;
 static Real sPsi;
 static Real sGamma;
 
-
-static VEC * svlk ;  //calc factor in update quaternion
+//calc factor in update quaternion
+static VEC * svlk ;
 
 #ifdef USE_BODYOMEGA
 static VEC * svOmegab;   // Omega in Body Coordinate System
 #endif
+
+//navigation calc vectors and Matrixes
+//for mid calc Gn
+static MAT * sm33I;
+static MAT * smrI3;
+static VEC * svk2k3;
+static VEC * sv1;
+//for save gn gn-1 vn vn-1
+static VEC * svGn;
+static VEC * svGn1;
+static VEC * svVn;
+static VEC * svVn1;
+static VEC * svMovementn;
+static VEC * svMovementn1;
 
 void update_CoordinateTransformationMatrix(Real dt)
 {
@@ -300,6 +314,8 @@ void init_AllSVals()
 
   init_Quaternion();
 
+  init_naviProc();
+
 }
 
 //TODO verify calc formula and unit
@@ -326,4 +342,59 @@ void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt
   smCnb->me[0][1] = t23 * t31 - t21 * t33;
   smCnb->me[0][2] = t21 * t32 - t22 * t31;
 
+}
+
+void init_naviProc()
+{
+  sm33I = m_get(3,3);
+  m_ident(sm33I);
+  smrI3 = m_get(3,3);
+  m_zero(smrI3);
+  sv1 = v_get(3);
+  v_ones(sv1);
+  svk2k3 = v_get(3);
+
+  svGn = v_get(3);
+  svGn1 = v_get(3);
+
+  svVn = v_get(3);
+  v_zero(svVn);
+  svVn1 = v_get(3);
+  svMovementn = v_get(3);
+  v_zero(svMovementn);
+  svMovementn1 = v_get(3);
+}
+
+void update_Navi(Real dt,VEC * deltaVn)
+{
+  v_copy(svGn,svGn1);
+  Real k1 = - fM / (sr * sr);
+  Real sinFaie = XTSIN(sFaie);
+  Real k2 = 1 - 5 * sinFaie * sinFaie;
+  Real k3 = 2 * sinFaie;
+  sv_mlt(k2,svRnormal,svk2k3);
+  v_mltadd(svk2k3,svOmegae,k3,svk2k3);
+  smrI3->me[0][0] = svRnormal->ve[0];
+  smrI3->me[1][1] = svRnormal->ve[1];
+  smrI3->me[2][2] = svRnormal->ve[2];
+  //vm_mlt(smrI3,svk2k3,svk2k3);
+  mv_mltadd(sv1,svk2k3,smrI3,XT_J,svk2k3);
+  vm_mlt(smrI3,svk2k3,svk2k3);
+  sv_mlt(k1,svk2k3,svGn);
+
+  v_copy(svVn,svVn1);
+  v_add(svGn,svGn1,svVn);
+  Real tmpValue = dt / 2;
+  sv_mlt(tmpValue,svVn,svVn);
+  v_add(svVn,svVn1,svVn);
+  v_add(svVn,deltaVn,svVn);
+
+  v_copy(svMovementn,svMovementn1);
+  v_mltadd(deltaVn,svGn1,dt,svMovementn);
+  v_mltadd(svVn1,svGn,0.5,svMovementn);
+  v_mltadd(svMovementn1,svMovementn,dt,svMovementn);
+
+  //TODO calc H
+
+  //TODO calc theta t
 }

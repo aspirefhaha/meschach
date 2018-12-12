@@ -17,7 +17,7 @@ LIBS =  -lm
 RANLIB = ranlib
 
 
-CFLAGS = -O
+CFLAGS = -O -Wno-unused-result
 
 
 .c.o:

@@ -4,19 +4,19 @@
 ** Copyright (C) 1993 David E. Steward & Zbigniew Leyk, all rights reserved.
 **
 **			     Meschach Library
-** 
-** This Meschach Library is provided "as is" without any express 
-** or implied warranty of any kind with respect to this software. 
-** In particular the authors shall not be liable for any direct, 
-** indirect, special, incidental or consequential damages arising 
+**
+** This Meschach Library is provided "as is" without any express
+** or implied warranty of any kind with respect to this software.
+** In particular the authors shall not be liable for any direct,
+** indirect, special, incidental or consequential damages arising
 ** in any way from use of the software.
-** 
+**
 ** Everyone is granted permission to copy, modify and redistribute this
 ** Meschach Library, provided:
 **  1.  All copies contain this copyright notice.
 **  2.  All modified copies shall carry a notice stating who
 **      made the last modification and the date of such modification.
-**  3.  No charge is made for this software or works derived from it.  
+**  3.  No charge is made for this software or works derived from it.
 **      This clause shall not be construed as constraining other software
 **      distributed on the same medium as this software, nor is a
 **      distribution fee considered a charge.
@@ -32,7 +32,7 @@
 
 /* RCS id: $Id: matrix.h,v 1.18 1994/04/16 00:33:37 des Exp $ */
 
-#define	MATRIXH	
+#define	MATRIXH
 
 #include	"machine.h"
 #include        "err.h"
@@ -175,10 +175,10 @@ extern	IVEC *iv_get(int), *iv_resize(IVEC *,int);
 /* get/resize a band matrix to given dimension */
 extern  BAND *bd_get(int,int,int), *bd_resize(BAND *,int,int,int);
 
-/* free (de-allocate) (band) matrices, vectors, permutations and 
+/* free (de-allocate) (band) matrices, vectors, permutations and
    integer vectors */
 extern  int iv_free(IVEC *);
-extern	m_free(MAT *),v_free(VEC *),px_free(PERM *);
+extern int	m_free(MAT *),v_free(VEC *),px_free(PERM *);
 extern   int bd_free(BAND *);
 
 #endif
@@ -298,7 +298,7 @@ PERM *px_finput(FILE *fp,PERM *out);
 IVEC *iv_finput(FILE *fp,IVEC *out);
 
 /* fy_or_n -- yes-or-no to question in string s
-        -- question written to stderr, input from fp 
+        -- question written to stderr, input from fp
         -- if fp is NOT a tty then return y_n_dflt */
 int fy_or_n(FILE *fp,char *s);
 
@@ -403,7 +403,7 @@ extern	VEC *sv_mlt(), *mv_mlt(), *vm_mlt(), *v_add(), *v_sub(),
 extern	double	v_min(), v_max(), v_sum();
 extern	VEC	*v_star(), *v_slash(), *v_sort();
 extern	double _in_prod(), __ip__();
-extern	void	__mltadd__(), __add__(), __sub__(), 
+extern	void	__mltadd__(), __add__(), __sub__(),
                 __smlt__(), __zero__();
 #else
 
@@ -416,22 +416,22 @@ extern	VEC	*sv_mlt(double,VEC *,VEC *),	/* out <- s.x */
 		*pxinv_vec(PERM *,VEC *,VEC *),	  /* out <- P^{-1}.x */
 		*v_mltadd(VEC *,VEC *,double,VEC *),   /* out <- x + s.y */
 #ifdef PROTOTYPES_IN_STRUCT
-		*v_map(double (*f)(double),VEC *,VEC *),  
+		*v_map(double (*f)(double),VEC *,VEC *),
                                                  /* out[i] <- f(x[i]) */
 		*_v_map(double (*f)(void *,double),void *,VEC *,VEC *),
 #else
 		*v_map(double (*f)(),VEC *,VEC *), /* out[i] <- f(x[i]) */
 		*_v_map(double (*f)(),void *,VEC *,VEC *),
 #endif
-		*v_lincomb(int,VEC **,Real *,VEC *),   
+		*v_lincomb(int,VEC **,Real *,VEC *),
                                                  /* out <- sum_i s[i].x[i] */
                 *v_linlist(VEC *out,VEC *v1,double a1,...);
                                               /* out <- s1.x1 + s2.x2 + ... */
 
 /* returns min_j x[j] (== x[i]) */
-extern	double	v_min(VEC *, int *), 
-     /* returns max_j x[j] (== x[i]) */		
-        v_max(VEC *, int *), 
+extern	double	v_min(VEC *, int *),
+     /* returns max_j x[j] (== x[i]) */
+        v_max(VEC *, int *),
         /* returns sum_i x[i] */
         v_sum(VEC *);
 
@@ -439,11 +439,11 @@ extern	double	v_min(VEC *, int *),
 extern	VEC	*v_star(VEC *, VEC *, VEC *),
                  /* out[i] <- x[i] / y[i] */
 		*v_slash(VEC *, VEC *, VEC *),
-               /* sorts x, and sets order so that sorted x[i] = x[order[i]] */ 
+               /* sorts x, and sets order so that sorted x[i] = x[order[i]] */
 		*v_sort(VEC *, PERM *);
 
 /* returns inner product starting at component i0 */
-extern	double	_in_prod(VEC *x,VEC *y,u_int i0), 
+extern	double	_in_prod(VEC *x,VEC *y,u_int i0),
                 /* returns sum_{i=0}^{len-1} x[i].y[i] */
                 __ip__(Real *,Real *,int);
 
@@ -470,7 +470,7 @@ extern	double	_v_norm1(), _v_norm2(), _v_norm_inf(),
 
 #else
                /* returns sum_i |x[i]/scale[i]| */
-extern	double	_v_norm1(VEC *x,VEC *scale),   
+extern	double	_v_norm1(VEC *x,VEC *scale),
                /* returns (scaled) Euclidean norm */
                 _v_norm2(VEC *x,VEC *scale),
                /* returns max_i |x[i]/scale[i]| */
@@ -510,8 +510,8 @@ extern	MAT	*sm_mlt(double s,MAT *A,MAT *out), 	/* out <- s.A */
 		*m_sub(MAT *A,MAT *B,MAT *out),	/* out <- A - B */
 		*sub_mat(MAT *A,u_int,u_int,u_int,u_int,MAT *out),
 		*m_transp(MAT *A,MAT *out),		/* out <- A^T */
-                /* out <- A + s.B */ 
-		*ms_mltadd(MAT *A,MAT *B,double s,MAT *out);   
+                /* out <- A + s.B */
+		*ms_mltadd(MAT *A,MAT *B,double s,MAT *out);
 
 
 extern  BAND    *bd_transp(BAND *in, BAND *out);   /* out <- A^T */
@@ -536,7 +536,7 @@ extern	VEC	*get_row(MAT *,u_int,VEC *),
 
 /* MACROS */
 /* row i of A <- vec */
-#define	set_row(mat,row,vec)	_set_row(mat,row,vec,0) 
+#define	set_row(mat,row,vec)	_set_row(mat,row,vec,0)
 /* col j of A <- vec */
 #define	set_col(mat,col,vec)	_set_col(mat,col,vec,0)
 
@@ -661,5 +661,3 @@ int m_free_vars();
 
 
 #endif
-
-
