@@ -22,6 +22,9 @@
 #define A0 (270.6/XT_PI)  //TODO degree? launching direction
 #define B0 (41.14/XT_PI)  //TODO degree? latitude of launching point
 #define LAMBDA0 (100.25169/XT_PI) //TODO degree? longitude of launching point
+#define R2D (57.29578)
+#define D2R   (1/R2D)
+#define EPSMIN  (1e-15)
 #define H0 (1073.0) //meter elevation of launching point
 #define g0 (9.80665)  //m/s2 gravitational acceleration on earth surface
 #define Ae  (6378140.0) //meter earth long radius
@@ -46,14 +49,15 @@ VEC * update_Quaternion(Real dtx,Real dty, Real dtz,Real dt);
 
 void calc_Clb_Cbl();
 void init_CoordinateTransformMatrix();
+void calc_CoordinatetransformationMatrix(Real dt);
 
 #ifdef USE_BODYOMEGA
 void init_OmegaBody();
 VEC * update_OmegaBody(Real dtx,Real dty, Real dtz,Real dt);
 #endif
 
-Real update_Psi();
-Real update_Fai();
-Real update_Gamma();
+void update_Posture();
 
 void init_naviProc();
+
+void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt);

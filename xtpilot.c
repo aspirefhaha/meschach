@@ -24,6 +24,9 @@ static Real sLambda;  //longitude
 static VEC * svMovemente;
 static VEC * svMovementI;
 
+static Real sH;
+static Real sthetaT;
+
 //coordinate transofrormation Matrixes
 static MAT * smCgI;
 static MAT * smCIb;
@@ -55,8 +58,9 @@ static VEC * svGn;
 static VEC * svGn1;
 static VEC * svVn;
 static VEC * svVn1;
-static VEC * svMovementn;
-static VEC * svMovementn1;
+static VEC * svVT;
+static VEC * svMovementI;
+static VEC * svMovementI1;
 
 void update_CoordinateTransformationMatrix(Real dt)
 {
@@ -110,13 +114,15 @@ void init_CoordinateTransformMatrix()
   svMovementI = v_get(3);
   v_zero(svMovementI);
 
-  //TODO Faie 0 is 0
-  Real Faie0 = 0;
+  //step 0.1 TODO check formula
+  Real mue0 = ALPHAe * XTSIN(2*B0) * ( 1- ALPHAe * ( 1- 4 * XTSIN(B0/2) * XTSIN(B0 / 2)));
 
-  //step 0.1
-  sMue = EP2 * XTSIN(2* sFaie ) * ( 1 - EP2 * XTSIN(sFaie) * XTSIN(sFaie)) / 2.0;
+  Real Faie0 = B0 - mue0 ;
+  sFaie = Faie0;
+
   //step 1
   sR = Ae * ( 1- ALPHAe) / XTSQRT( XTSIN(sFaie) * XTSIN(sFaie) + (1 - ALPHAe) * (1 - ALPHAe) * XTCOS(sFaie) * XTCOS(sFaie)) * H0;
+
   //step 2
   svMovemente = v_get(3);
   v_zero(svMovemente);
@@ -135,16 +141,52 @@ void init_CoordinateTransformMatrix()
   //step 5
   Real rreciprocal = 1/ sr;
   /* svRnormal = */ sv_mlt(rreciprocal,svr,svRnormal);
+
   //step 6
   sFaie = XTARCSIN(in_prod(svRnormal,svOmegae));
+
+  //step 7
+  sMue = EP2 * XTSIN(2* sFaie ) * ( 1 - EP2 * XTSIN(sFaie) * XTSIN(sFaie)) / 2.0;
+
   //step 8.1
   sB = sFaie + sMue;
   //step 8.2
   sLambda = LAMBDA0 + XTARCTAN(svMovemente->ve[1]/svMovemente->ve[0]);
 
-
   //Initialize Coordinate Transformation Matrixes
   update_CoordinateTransformationMatrix(0.0);
+}
+
+void calc_CoordinatetransformationMatrix(Real dt)
+{
+  //step 1
+  sR = Ae * ( 1- ALPHAe) / XTSQRT( XTSIN(sFaie) * XTSIN(sFaie) + (1 - ALPHAe) * (1 - ALPHAe) * XTCOS(sFaie) * XTCOS(sFaie)) * H0;
+
+  //step 2 TODO update from Posture
+  // update svMovemente
+
+  //step 4
+  //TODO update svMovementI
+  /* svr =  */ v_add(svR0,svMovementI,svr);
+  sr = v_norm2(svr);
+
+  //step 5
+  Real rreciprocal = 1/ sr;
+  /* svRnormal = */ sv_mlt(rreciprocal,svr,svRnormal);
+
+  //step 6
+  sFaie = XTARCSIN(in_prod(svRnormal,svOmegae));
+
+  //step 7
+  sMue = EP2 * XTSIN(2* sFaie ) * ( 1 - EP2 * XTSIN(sFaie) * XTSIN(sFaie)) / 2.0;
+
+  //step 8.1
+  sB = sFaie + sMue;
+  //step 8.2
+  sLambda = LAMBDA0 + XTARCTAN(svMovemente->ve[1]/svMovemente->ve[0]);
+
+  //update coordinate transform matrixes
+  update_CoordinateTransformationMatrix(dt);
 }
 
 void init_Rxyz()
@@ -180,22 +222,13 @@ void calc_CIb_CbI()
 }
 
 //TODO use CIb
-Real update_Psi()
+void update_Posture()
 {
-  return XTARCTAN2(smCbI->me[0][1],smCbI->me[0][0]);
+  sPsi =  XTARCSIN(-smCbI->me[2][0]);
+  sFai = XTARCTAN2(smCbI->me[0][1],smCbI->me[0][0]); // -pi <= fai <= pi
+  sGamma =  XTARCTAN2(smCbI->me[1][2],smCbI->me[2][2]);
 }
 
-//TODO use CIb
-Real update_Fai()
-{
-  return XTARCSIN(-smCbI->me[2][0]);
-}
-
-//TODO use CIb
-Real update_Gamma()
-{
-  return XTARCTAN2(smCbI->me[1][2],smCbI->me[2][2]);
-}
 
 #ifdef USE_BODYOMEGA
 void init_OmegaBody()
@@ -318,7 +351,7 @@ void init_AllSVals()
 
 }
 
-//TODO verify calc formula and unit
+//TODO verify input parameters and relations between dw dv and tm
 void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt)
 {
   Real g = g0 * ( sR / sr);
@@ -331,11 +364,11 @@ void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt
   t33 = dvz / g / dt;
   smCnb->me[2][2] = t33;
 
-  t21 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwx - dt * t31 * OMEGAe * XTSIN(XT_L));
+  t21 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwx - dt * t31 * OMEGAe * XTSIN(B0));
   smCnb->me[1][0] = t21;
-  t22 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwy - dt * t32 * OMEGAe * XTSIN(XT_L));
+  t22 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwy - dt * t32 * OMEGAe * XTSIN(B0));
   smCnb->me[1][1] = t22;
-  t23 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwz - dt * t33 * OMEGAe * XTSIN(XT_L));
+  t23 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwz - dt * t33 * OMEGAe * XTSIN(B0));
   smCnb->me[1][2] = t23;
 
   smCnb->me[0][0] = t22 * t33 - t23 * t32;
@@ -359,14 +392,20 @@ void init_naviProc()
 
   svVn = v_get(3);
   v_zero(svVn);
+
+  svVT = v_get(3);
+  v_zero(svVT);
+
   svVn1 = v_get(3);
-  svMovementn = v_get(3);
-  v_zero(svMovementn);
-  svMovementn1 = v_get(3);
+  svMovementI = v_get(3);
+  v_zero(svMovementI);
+  svMovementI1 = v_get(3);
 }
 
-void update_Navi(Real dt,VEC * deltaVn)
+//TODO deltaVn should be m/s not m/s2
+void update_Navi(Real dt,VEC * deltaVb)
 {
+  //step 1
   v_copy(svGn,svGn1);
   Real k1 = - fM / (sr * sr);
   Real sinFaie = XTSIN(sFaie);
@@ -382,19 +421,34 @@ void update_Navi(Real dt,VEC * deltaVn)
   vm_mlt(smrI3,svk2k3,svk2k3);
   sv_mlt(k1,svk2k3,svGn);
 
+  //step 2
+  //TODO first update_Quaternion
+  mv_mlt(smCIb,deltaVb,deltaVb);
+  VEC * deltaVI = deltaVb;
+
+  //step 3
   v_copy(svVn,svVn1);
   v_add(svGn,svGn1,svVn);
   Real tmpValue = dt / 2;
   sv_mlt(tmpValue,svVn,svVn);
   v_add(svVn,svVn1,svVn);
-  v_add(svVn,deltaVn,svVn);
+  v_add(svVn,deltaVI,svVn);
 
-  v_copy(svMovementn,svMovementn1);
-  v_mltadd(deltaVn,svGn1,dt,svMovementn);
-  v_mltadd(svVn1,svGn,0.5,svMovementn);
-  v_mltadd(svMovementn1,svMovementn,dt,svMovementn);
+  //step 4
+  v_copy(svMovementI,svMovementI1);
+  v_mltadd(deltaVI,svGn1,dt,svMovementI);
+  v_mltadd(svVn1,svGn,0.5,svMovementI);
+  v_mltadd(svMovementI1,svMovementI,dt,svMovementI);
 
-  //TODO calc H
+  //step 5
+  mv_mlt(smCgI,svVn,svVT);
+  vm_mlt(smCgE,svVT,svVT);
+  vm_mlt(smCTE,svVT,svVT);
 
-  //TODO calc theta t
+  //step 6
+  sH = sr - sR + H0;
+
+  //step 7
+  Real * vT = svVT->ve;
+  sthetaT = XTARCSIN(vT[1]/ XTSQRT(vT[0] * vT[0] + vT[1] * vT[1] + vT[2] * vT[2]));
 }
