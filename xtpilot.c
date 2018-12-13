@@ -62,6 +62,40 @@ static VEC * svVT;
 static VEC * svMovementI;
 static VEC * svMovementI1;
 
+static Real skineticPressure;
+static Real sMach;
+static Real sAirPressure;
+
+static Real bAtmoRow1;
+static Real bAtmoRow2;
+static Real bAtmoHeight1;
+static Real bAtmoHeight2;
+
+void calc_atmosphere(Real height,VEC * vI)
+{
+  //step 1
+  Real vnorm = v_norm2(vI);
+
+  //TODO  in bind func calc
+  Real beta = log(bAtmoRow2/bAtmoRow1)/(bAtmoHeight2-bAtmoHeight1);
+  Real row = bAtmoRow1*pow(XT_E,beta*(height-bAtmoHeight1));
+  skineticPressure = 0.5 * row * vnorm * vnorm;
+
+  //step2
+  //TODO calc Temperature of Atmosphere
+  //sMach = vnorm / XT_SQRT( KCS * RSTAR * Ta)
+
+  //step3
+  //sAirPressure = row * RSTAR * Ta
+}
+
+
+//TODO
+void bind_Paratmeters()
+{
+
+}
+
 void update_CoordinateTransformationMatrix(Real dt)
 {
   // Calc CgI
@@ -228,7 +262,6 @@ void update_Posture()
   sFai = XTARCTAN2(smCbI->me[0][1],smCbI->me[0][0]); // -pi <= fai <= pi
   sGamma =  XTARCTAN2(smCbI->me[1][2],smCbI->me[2][2]);
 }
-
 
 #ifdef USE_BODYOMEGA
 void init_OmegaBody()

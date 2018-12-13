@@ -23,4 +23,25 @@
 \?\d*E\?-\?\d*\)/\t{\1},/g
 ```
 
-* 
+* need bind parameters
+  - A0
+  - B0
+  - LAMBDA0
+  - H0
+  - Faie0
+  - Miu0
+  - init Posture:
+    - fai0
+    - psi0
+    - gamma0
+  - H1
+  - density of atmosphere
+    - H1
+    - H2
+    - row1
+    - row2
+  - temperature of air parameters(Ta)
+  - k1fai,k2fai,k1psi,k2psi
+  - flying time series
+    - time action height acceleration thetat speed(mach)
+  - Hcx, Thetacx

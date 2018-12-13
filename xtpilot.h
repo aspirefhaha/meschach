@@ -37,6 +37,11 @@
 #define E2  (0.00669438487525)  // square of first eccentricity ratio
 #define EP2 (0.00673950169345)  // square of second eccentricity ratio
 
+#define KCS 1.4 // K coefficient of gas
+#define RSTAR 287.05287 // R* R ocefficent of gas
+#define XT_E 2.718281828 // for nature base
+
+
 
 
 //void init_AllSVals();
@@ -61,3 +66,5 @@ void update_Posture();
 void init_naviProc();
 
 void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt);
+void bind_Paratmeters();
+void calc_atmosphere(Real height,VEC * vI);
