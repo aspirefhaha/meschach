@@ -197,5 +197,5 @@ tstmove: tstmove.o meschach.a
 tstpxvec: tstpxvec.o meschach.a
 	$(CC) $(CFLAGS) $(DEFS) -o tstpxvec tstpxvec.o \
 	meschach.a $(LIBS)
-xtpilot: xtpilot.o xt_test.o meschach.a
+xtpilot: xtpilot.o xt_test.o naviguide.o ctlgain.o imudata.o meschach.a
 	$(CC) $(CFLAGS) -Wimplicit-int  $(DEFS) -o $@ $^ $(LIBS)
