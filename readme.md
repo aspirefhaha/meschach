@@ -23,7 +23,7 @@
 \?\d*E\?-\?\d*\)/\t{\1},/g
 ```
 
-* need bind parameters
+## need bind parameters
   - A0
   - B0
   - LAMBDA0
@@ -44,4 +44,29 @@
   - k1fai,k2fai,k1psi,k2psi
   - flying time series
     - time action height acceleration thetat speed(mach)
-  - Hcx, Thetacx
+  - Hcx
+  - Thetacx
+
+## Output Data to RemoteCapture
+  - A
+  - B
+  - Lambda
+  - H
+  - VI (velocity in I)
+  - MovementI
+  - kineticPressure
+  - Mach
+  - AirPressure
+  - Aim Cnb(Only Aim State)
+  - CgI ( Only Aim State)
+  - CgE ( Only Aim State)
+  - CTE ( Only Aim state)
+  - CIb
+  - Cnb
+  - psi,fai,gamma
+  - r
+  - state( init / subsystem/simulation/.../reallaunching)
+  - substate (aim/flying/...)
+  - Acceleration(X,Y,Z)
+  - Omega(X,Y,Z)
+  - thetaT
