@@ -8,6 +8,7 @@
 #define XTARCSIN asin
 #define XTARCTAN2 atan2
 #define XTARCTAN  atan
+#define XTEXP exp
 
 #define DELTATIME 0.005 // 5 ms
 
@@ -42,6 +43,11 @@
 #define XT_E 2.718281828 // for nature base
 
 
+#define XT_Tm (0.005)      //5 ms
+
+#define SIGNFUNC(k) ( k>=0?1:-1)
+
+
 
 
 //void init_AllSVals();
@@ -50,21 +56,21 @@ MAT * Rx(Real theta);
 MAT * Ry(Real theta);
 MAT * Rz(Real theta);
 VEC * init_Quaternion();
-VEC * update_Quaternion(Real dtx,Real dty, Real dtz,Real dt);
+VEC * update_Quaternion(Real dtx,Real dty, Real dtz);
 
 void calc_Clb_Cbl();
 void init_CoordinateTransformMatrix();
-void calc_CoordinatetransformationMatrix(Real dt);
+void calc_CoordinatetransformationMatrix();
 
 #ifdef USE_BODYOMEGA
 void init_OmegaBody();
-VEC * update_OmegaBody(Real dtx,Real dty, Real dtz,Real dt);
+VEC * update_OmegaBody(Real dtx,Real dty, Real dtz);
 #endif
 
 void update_Posture();
 
 void init_naviProc();
 
-void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt);
+void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz);
 void bind_Paratmeters();
 void calc_atmosphere(Real height,VEC * vI);

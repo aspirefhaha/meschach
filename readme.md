@@ -24,49 +24,56 @@
 ```
 
 ## need bind parameters
-  - A0
-  - B0
-  - LAMBDA0
-  - H0
-  - Faie0
-  - Miu0
-  - init Posture:
-    - fai0
-    - psi0
-    - gamma0
-  - H1
-  - density of atmosphere
+  - navi paratmeters:
+    - A0
+    - B0
+    - LAMBDA0
+    - H0
+    - Faie0
+    - Miu0
+    - init Posture:
+      - fai0
+      - psi0
+      - gamma0
     - H1
-    - H2
-    - row1
-    - row2
-  - temperature of air parameters(Ta)
-  - k1fai,k2fai,k1psi,k2psi
+    - density of atmosphere
+      - H1
+      - H2
+      - row1
+      - row2
+    - temperature of air parameters(Ta)
+  - guidance coefficents
+    - k1fai,k2fai,k1psi,k2psi
   - flying time series
     - time action height acceleration thetat speed(mach)
-  - Hcx
-  - Thetacx
+  - Trajectory
+    - DeltaTime
+    - Hcx
+    - Thetacx
 
 ## Output Data to RemoteCapture
-  - A
-  - B
-  - Lambda
-  - H
-  - VI (velocity in I)
-  - MovementI
-  - kineticPressure
-  - Mach
-  - AirPressure
-  - Aim Cnb(Only Aim State)
-  - CgI ( Only Aim State)
-  - CgE ( Only Aim State)
-  - CTE ( Only Aim state)
-  - CIb
-  - Cnb
-  - psi,fai,gamma
-  - r
-  - state( init / subsystem/simulation/.../reallaunching)
-  - substate (aim/flying/...)
-  - Acceleration(X,Y,Z)
-  - Omega(X,Y,Z)
-  - thetaT
+  - Navi result
+    - deltaTime
+    - B
+    - Lambda
+    - H
+    - VI (velocity in I)
+    - MovementI
+    - kineticPressure
+    - Mach
+    - AirPressure
+    - Aim Cnb(Only Aim State)
+    - CgI ( Only Aim State)
+    - CgE ( Only Aim State)
+    - CTE ( Only Aim state)
+    - CIb
+    - Cnb
+    - psi,fai,gamma
+    - r
+    - state( init / subsystem/simulation/.../reallaunching)
+    - substate (aim/flying/...)
+    - Acceleration(X,Y,Z)
+    - Omega(X,Y,Z)
+    - thetaT
+  - Guidance result
+    -

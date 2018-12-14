@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include "matrix2.h"
 #include "xtpilot.h"
+#include "naviguide.h"
 
+
+static Real sDeltaTime;
 
 // posture calc matrixes and vectors
 static MAT * smRx ;  //Rotate Matrix for x
@@ -25,7 +28,7 @@ static VEC * svMovemente;
 static VEC * svMovementI;
 
 static Real sH;
-static Real sthetaT;
+static Real sThetaT;
 
 //coordinate transofrormation Matrixes
 static MAT * smCgI;
@@ -56,8 +59,8 @@ static VEC * sv1;
 //for save gn gn-1 vn vn-1
 static VEC * svGn;
 static VEC * svGn1;
-static VEC * svVn;
-static VEC * svVn1;
+static VEC * svVI;
+static VEC * svVI1;
 static VEC * svVT;
 static VEC * svMovementI;
 static VEC * svMovementI1;
@@ -66,29 +69,102 @@ static Real skineticPressure;
 static Real sMach;
 static Real sAirPressure;
 
-static Real bAtmoRow1;
-static Real bAtmoRow2;
-static Real bAtmoHeight1;
-static Real bAtmoHeight2;
+static Real sbAtomRow1;
+static Real sbAtmoRow2;
+static Real sbAtmoHeight1;
+static Real sbAtmoHeight2;
 
-void calc_atmosphere(Real height,VEC * vI)
+static Real sTheta;   // theta in g coordination
+static Real sEpsilon;
+static Real sAlpha;
+static Real sBeta;
+static VEC * svVg;
+static VEC * svVb;
+
+static Real sGuideNormal;
+static Real sGuideLand;
+
+void init_Guidance()
 {
-  //step 1
-  Real vnorm = v_norm2(vI);
-
-  //TODO  in bind func calc
-  Real beta = log(bAtmoRow2/bAtmoRow1)/(bAtmoHeight2-bAtmoHeight1);
-  Real row = bAtmoRow1*pow(XT_E,beta*(height-bAtmoHeight1));
-  skineticPressure = 0.5 * row * vnorm * vnorm;
-
-  //step2
-  //TODO calc Temperature of Atmosphere
-  //sMach = vnorm / XT_SQRT( KCS * RSTAR * Ta)
-
-  //step3
-  //sAirPressure = row * RSTAR * Ta
+  svVg = v_get(3);
+  v_zero(svVg);
+  svVb = v_get(3);
+  v_zero(svVb);
 }
 
+void calc_GuidanceParameters()
+{
+  mv_mlt(smCgI,svVI,svVg);
+  Real * vg = svVg->ve;
+  mv_mlt(smCbI,svVI,svVb);
+  Real * vb = svVb->ve;
+  Real tVg = v_norm2(svVg);
+  Real tVb = v_norm2(svVb);
+  if(vg[0]>=0){ //vgx >= 0
+    sTheta = XTARCSIN(vg[1]/XTSQRT(vg[0] * vg[0] + vg[1] * vg[1]));
+  }
+  else{ //vgx<0
+    sTheta = XT_PI - XTARCSIN(vg[1]/XTSQRT(vg[0] * vg[0] + vg[1] * vg[1]));
+  }
+  sEpsilon = XTARCSIN( - vg[2] / tVg);
+
+  if(vb[0]>=0){ //vbx >= 0
+    sAlpha = XTARCSIN(vb[1] / XTSQRT(vb[0] * vb[0] + vb[1] * vb[1]));
+    sBeta = XTARCSIN( vb[1] / tVb);
+  }
+  else {  //vbx < 0
+    sAlpha = SIGNFUNC(vb[1]) * XT_PI - XTARCSIN( vb[1] / XTSQRT(vb[0] * vb[0] + vb[1] * vb[1]));
+    sBeta = XT_PI * SIGNFUNC(vb[2]) - XTARCSIN(vb[2] / tVb);
+  }
+}
+
+//TODO bind and get trajectory
+Real get_trajectoryTheta()
+{
+  //get delta time and height
+  return 0;
+}
+
+//TODO bind and get trajectory
+Real get_trjactoryHeight()
+{
+  //get delta time and height
+  return 0;
+}
+
+//TODO
+Real get_k1fai()
+{
+  return 0;
+}
+
+Real get_k2fai()
+{
+
+}
+
+Real get_k1psi()
+{
+
+}
+
+Real get_k2psi()
+{
+
+}
+
+void calc_GuidanceValues()
+{
+  Real deltaTheta = get_trajectoryTheta() - sTheta;
+  Real deltaH = get_trjactoryHeight() - sH;
+  if(sDeltaTime <= 6){
+    sGuideNormal = 0;
+    sGuideLand = 0;
+  }
+  else if(sDeltaTime <= 8){
+    //sGuideNormal = (sDeltaTime - 6) / 2.0 * ( k1fai * );
+  }
+}
 
 //TODO
 void bind_Paratmeters()
@@ -96,11 +172,29 @@ void bind_Paratmeters()
 
 }
 
-void update_CoordinateTransformationMatrix(Real dt)
+void calc_atmosphere(Real height,VEC * vI)
+{
+  //step 1
+  Real vnorm = v_norm2(vI);
+
+  //TODO  in bind func calc
+  Real beta = log(sbAtmoRow2/sbAtomRow1)/(sbAtmoHeight2-sbAtmoHeight1);
+  Real rou = sbAtomRow1*XTEXP(beta*(height-sbAtmoHeight1));
+  skineticPressure = 0.5 * rou * vnorm * vnorm;
+
+  //step2
+  //TODO calc Temperature of Atmosphere
+  //sMach = vnorm / XT_SQRT( KCS * RSTAR * Ta)
+
+  //step3
+  //sAirPressure = rou * RSTAR * Ta
+}
+
+void update_CoordinateTransformationMatrix()
 {
   // Calc CgI
   m_mlt(Ry(-A0),Rz(-B0),smCgI);
-  m_mlt(smCgI,Rx(dt * OMEGAe),smCgI);
+  m_mlt(smCgI,Rx(sDeltaTime * OMEGAe),smCgI);
   m_mlt(smCgI,Rz(B0),smCgI);
   m_mlt(smCgI,Ry(A0),smCgI);
 
@@ -191,7 +285,7 @@ void init_CoordinateTransformMatrix()
   update_CoordinateTransformationMatrix(0.0);
 }
 
-void calc_CoordinatetransformationMatrix(Real dt)
+void calc_CoordinatetransformationMatrix()
 {
   //step 1
   sR = Ae * ( 1- ALPHAe) / XTSQRT( XTSIN(sFaie) * XTSIN(sFaie) + (1 - ALPHAe) * (1 - ALPHAe) * XTCOS(sFaie) * XTCOS(sFaie)) * H0;
@@ -220,7 +314,7 @@ void calc_CoordinatetransformationMatrix(Real dt)
   sLambda = LAMBDA0 + XTARCTAN(svMovemente->ve[1]/svMovemente->ve[0]);
 
   //update coordinate transform matrixes
-  update_CoordinateTransformationMatrix(dt);
+  update_CoordinateTransformationMatrix();
 }
 
 void init_Rxyz()
@@ -269,11 +363,11 @@ void init_OmegaBody()
   svOmegab = v_get(3);
 }
 
-VEC * update_OmegaBody(Real dtx,Real dty, Real dtz,Real dt)
+VEC * update_OmegaBody(Real dtx,Real dty, Real dtz)
 {
-  svOmegab->ve[0] = dtx / dt;
-  svOmegab->ve[1] = dty / dt;
-  svOmegab->ve[2] = dtz / dt;
+  svOmegab->ve[0] = dtx / XT_Tm;
+  svOmegab->ve[1] = dty / XT_Tm;
+  svOmegab->ve[2] = dtz / XT_Tm;
 }
 #endif
 
@@ -309,7 +403,7 @@ VEC * init_Quaternion()
   return svQn;
 }
 
-VEC * update_Quaternion(Real dtx,Real dty, Real dtz,Real dt)
+VEC * update_Quaternion(Real dtx,Real dty, Real dtz)
 {
   Real dtheta2 = dtx * dtx + dty * dty + dtz  * dtz;
   Real ac = 1- dtheta2 / 8;
@@ -322,7 +416,7 @@ VEC * update_Quaternion(Real dtx,Real dty, Real dtz,Real dt)
   sv_mlt(v_norm2(svQn),svQn,svQn); // normalize
   mk_QMatrix();
 #ifdef USE_BODYOMEGA
-  update_OmegaBody(dtx,dty,dtz,dt);
+  update_OmegaBody(dtx,dty,dtz);
 #endif
   return svQn;
 }
@@ -369,6 +463,9 @@ void update_B()
 
 void init_AllSVals()
 {
+  sDeltaTime = 0;
+  sGuideNormal = 0;
+  sGuideLand = 0;
   init_Rxyz();
 
 #ifdef USE_BODYOMEGA
@@ -382,26 +479,28 @@ void init_AllSVals()
 
   init_naviProc();
 
+  init_Guidance();
+
 }
 
 //TODO verify input parameters and relations between dw dv and tm
-void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz,Real dt)
+void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz)
 {
   Real g = g0 * ( sR / sr);
   //TODO verify formula and unit
   Real t31,t32,t33,t21,t22,t23;
-  t31 =  dvx / g / dt;
+  t31 =  dvx / g / XT_Tm;
   smCnb->me[2][0] = t31;
-  t32 = dvy / g / dt;
+  t32 = dvy / g / XT_Tm;
   smCnb->me[2][1] = t32;
-  t33 = dvz / g / dt;
+  t33 = dvz / g / XT_Tm;
   smCnb->me[2][2] = t33;
 
-  t21 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwx - dt * t31 * OMEGAe * XTSIN(B0));
+  t21 = 1 / ( XT_Tm * OMEGAe * XTCOS(B0)) * ( dwx - XT_Tm * t31 * OMEGAe * XTSIN(B0));
   smCnb->me[1][0] = t21;
-  t22 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwy - dt * t32 * OMEGAe * XTSIN(B0));
+  t22 = 1 / ( XT_Tm * OMEGAe * XTCOS(B0)) * ( dwy - XT_Tm * t32 * OMEGAe * XTSIN(B0));
   smCnb->me[1][1] = t22;
-  t23 = 1 / ( dt * OMEGAe * XTCOS(B0)) * ( dwz - dt * t33 * OMEGAe * XTSIN(B0));
+  t23 = 1 / ( XT_Tm * OMEGAe * XTCOS(B0)) * ( dwz - XT_Tm * t33 * OMEGAe * XTSIN(B0));
   smCnb->me[1][2] = t23;
 
   smCnb->me[0][0] = t22 * t33 - t23 * t32;
@@ -423,20 +522,20 @@ void init_naviProc()
   svGn = v_get(3);
   svGn1 = v_get(3);
 
-  svVn = v_get(3);
-  v_zero(svVn);
+  svVI = v_get(3);
+  v_zero(svVI);
 
   svVT = v_get(3);
   v_zero(svVT);
 
-  svVn1 = v_get(3);
+  svVI1 = v_get(3);
   svMovementI = v_get(3);
   v_zero(svMovementI);
   svMovementI1 = v_get(3);
 }
 
 //TODO deltaVn should be m/s not m/s2
-void update_Navi(Real dt,VEC * deltaVb)
+void update_Navi(VEC * deltaVb)
 {
   //step 1
   v_copy(svGn,svGn1);
@@ -460,21 +559,20 @@ void update_Navi(Real dt,VEC * deltaVb)
   VEC * deltaVI = deltaVb;
 
   //step 3
-  v_copy(svVn,svVn1);
-  v_add(svGn,svGn1,svVn);
-  Real tmpValue = dt / 2;
-  sv_mlt(tmpValue,svVn,svVn);
-  v_add(svVn,svVn1,svVn);
-  v_add(svVn,deltaVI,svVn);
+  v_copy(svVI,svVI1);
+  v_add(svGn,svGn1,svVI);
+  sv_mlt(XT_Tm / 2,svVI,svVI);
+  v_add(svVI,svVI1,svVI);
+  v_add(svVI,deltaVI,svVI);
 
   //step 4
   v_copy(svMovementI,svMovementI1);
-  v_mltadd(deltaVI,svGn1,dt,svMovementI);
-  v_mltadd(svVn1,svGn,0.5,svMovementI);
-  v_mltadd(svMovementI1,svMovementI,dt,svMovementI);
+  v_mltadd(deltaVI,svGn1,XT_Tm,svMovementI);
+  v_mltadd(svVI1,svGn,0.5,svMovementI);
+  v_mltadd(svMovementI1,svMovementI,XT_Tm,svMovementI);
 
   //step 5
-  mv_mlt(smCgI,svVn,svVT);
+  mv_mlt(smCgI,svVI,svVT);
   vm_mlt(smCgE,svVT,svVT);
   vm_mlt(smCTE,svVT,svVT);
 
@@ -483,5 +581,5 @@ void update_Navi(Real dt,VEC * deltaVb)
 
   //step 7
   Real * vT = svVT->ve;
-  sthetaT = XTARCSIN(vT[1]/ XTSQRT(vT[0] * vT[0] + vT[1] * vT[1] + vT[2] * vT[2]));
+  sThetaT = XTARCSIN(vT[1]/ XTSQRT(vT[0] * vT[0] + vT[1] * vT[1] + vT[2] * vT[2]));
 }
