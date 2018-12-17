@@ -74,3 +74,8 @@ void init_naviProc();
 void init_RoughAim(Real dvx,Real dvy,Real dvz,Real dwx,Real dwy,Real dwz);
 void bind_Paratmeters();
 void calc_atmosphere(Real height,VEC * vI);
+
+#define get_linearinterpolation(x1,x2,y1,y2,xk) \
+  (y1 + (y2-y1)/(x2-x1) * (xk - x1))
+
+#define LINEAR_INTER(st,id,fname1,fname2,xk)  get_linearinterpolation(st[id].fname1,st[id+1].fname1,st[id].fname2,st[id+1].fname2,xk)

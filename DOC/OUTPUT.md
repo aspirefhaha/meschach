@@ -1,0 +1,27 @@
+# Output Data to RemoteCapture
+  - deltatime
+  - uptime
+  - state( init / subsystem/simulation/.../reallaunching)
+  - substate (aim/flying/...)
+  - Navi result
+    - B (2.3.2)
+    - Lambda  (2.3.2)
+    - H (3.3)
+    - VI (velocity vector in I) (3.3)
+    - MovementI (3.3)
+    - kineticPressure ()
+    - Mach
+    - AirPressure
+    - Aim Cnb(Only Aim State)
+    - CgI ( Only Aim State) (2.3.2)
+    - CgE ( Only Aim State) (2.3.2)
+    - CTE ( Only Aim state) (2.3.2)
+    - CIb (3.4)
+    - Cnb (3.2)
+    - psi,fai,gamma (3.4)
+    - r (di xin shiliang) (3.3)
+    - Acceleration(X,Y,Z) ()
+    - Omega(X,Y,Z)
+    - thetaT (3.3)
+  - Guidance result
+    -

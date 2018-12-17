@@ -1,0 +1,29 @@
+# need bind parameters
+  - navi paratmeters:
+    - A0 (2.1)
+    - B0  (2.1)
+    - LAMBDA0 (2.1)
+    - H0  (2.1)
+    - Faie0(2.3.2)
+    - Miu0  (2.3.2)
+    - init Posture:
+      - fai0  (3.4)
+      - psi0  (3.4)
+      - gamma0  (3.4)
+    - H1 (???)
+    - density of atmosphere
+      - H1  (3.5)
+      - H2  (3.5)
+      - row1  (3.5)
+      - row2  (3.5)
+    - temperature of air parameters(Ta) (3.5)
+  - guidance coefficents  (4.2)
+    - k1fai,k2fai,k1psi,k2psi
+  - flying time series  (4.1)
+    - time action height acceleration thetat speed(mach)
+    - tdz,tdh,t0,t0+1,t0+2.5,trq,thj,tfl,tzg,tld
+  - Trajectory  (4.2)
+    - Thetacx,DeltaTime ( 4.4 before Tfl)
+    - Thetacx,Height( 4.4 after Tfl)
+    - Hcx,DeltaTime (4.2)
+    - Faic,Psic,Gammac (4.4)

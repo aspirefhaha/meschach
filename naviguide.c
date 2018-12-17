@@ -19,3 +19,6 @@ naviguide_t naviguide[] = {
 	{116,2,0.0007,2,0.0007},
 	{500,2,0.0007,2,0.0007}
 };
+
+//TODO every time load naviguid need update this count
+int naviguidecount;

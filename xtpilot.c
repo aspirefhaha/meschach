@@ -2,9 +2,12 @@
 #include "matrix2.h"
 #include "xtpilot.h"
 #include "naviguide.h"
+#include "trajectory.h"
 
 
 static Real sDeltaTime;
+static Real sUpTime;
+static int sIsSplited;  //Tfl related
 
 // posture calc matrixes and vectors
 static MAT * smRx ;  //Rotate Matrix for x
@@ -26,6 +29,7 @@ static Real sB;     //latitude
 static Real sLambda;  //longitude
 static VEC * svMovemente;
 static VEC * svMovementI;
+static VEC * svMovenmentg;
 
 static Real sH;
 static Real sThetaT;
@@ -94,12 +98,15 @@ void init_Guidance()
 
 void calc_GuidanceParameters()
 {
+  //Step 1
   mv_mlt(smCgI,svVI,svVg);
   Real * vg = svVg->ve;
+  //Step 2
   mv_mlt(smCbI,svVI,svVb);
   Real * vb = svVb->ve;
   Real tVg = v_norm2(svVg);
   Real tVb = v_norm2(svVb);
+  //Step 3
   if(vg[0]>=0){ //vgx >= 0
     sTheta = XTARCSIN(vg[1]/XTSQRT(vg[0] * vg[0] + vg[1] * vg[1]));
   }
@@ -107,7 +114,7 @@ void calc_GuidanceParameters()
     sTheta = XT_PI - XTARCSIN(vg[1]/XTSQRT(vg[0] * vg[0] + vg[1] * vg[1]));
   }
   sEpsilon = XTARCSIN( - vg[2] / tVg);
-
+  //Step 4
   if(vb[0]>=0){ //vbx >= 0
     sAlpha = XTARCSIN(vb[1] / XTSQRT(vb[0] * vb[0] + vb[1] * vb[1]));
     sBeta = XTARCSIN( vb[1] / tVb);
@@ -118,51 +125,95 @@ void calc_GuidanceParameters()
   }
 }
 
-//TODO bind and get trajectory
+
+
+//TODO bind trajectory
 Real get_trajectoryTheta()
 {
-  //get delta time and height
+  int rindex = 0;
+  if(sIsSplited){
+    rindex = trj_thetacx_height_count;
+    while(--rindex>=0){
+      if(Trj_thetacx_height[rindex].height <= sH){
+        return LINEAR_INTER(Trj_thetacx_height,rindex,height,thetacx,sH);
+      }
+    }
+  }
+  else{
+    rindex = trj_thetacx_time_count;
+    while(--rindex>=0){
+      if(Trj_thetacx_time[rindex].dtime <= sDeltaTime){
+        return LINEAR_INTER(Trj_thetacx_time,rindex,dtime,thetacx,sDeltaTime);
+      }
+    }
+  }
   return 0;
 }
 
-//TODO bind and get trajectory
+//TODO bind trajectory
 Real get_trjactoryHeight()
 {
-  //get delta time and height
-  return 0;
+  int rindex = trj_hcx_time_count;
+  while(--rindex>=0 ){
+    if( Trj_hcx_time[rindex].dtime <= sDeltaTime ){
+      return LINEAR_INTER(Trj_hcx_time,rindex,dtime,height,sDeltaTime);
+    }
+  }
+  return -1;
 }
 
-//TODO
-Real get_k1fai()
+static int get_k12faipsiindex()
 {
-  return 0;
-}
-
-Real get_k2fai()
-{
-
-}
-
-Real get_k1psi()
-{
-
-}
-
-Real get_k2psi()
-{
-
+  int rindex = naviguidecount;
+  while(--rindex>=0){
+    if(naviguide[rindex].dtime<=sDeltaTime){
+      return rindex;
+    }
+  }
 }
 
 void calc_GuidanceValues()
 {
   Real deltaTheta = get_trajectoryTheta() - sTheta;
   Real deltaH = get_trjactoryHeight() - sH;
+  int naviindex = get_k12faipsiindex();
+  Real k1fai = LINEAR_INTER(naviguide,naviindex,dtime,k1fai,sDeltaTime);
+  Real k2fai = LINEAR_INTER(naviguide,naviindex,dtime,k2fai,sDeltaTime);
+  Real k1psi = LINEAR_INTER(naviguide,naviindex,dtime,k1psi,sDeltaTime);
+  Real k2psi = LINEAR_INTER(naviguide,naviindex,dtime,k2psi,sDeltaTime);
+
+  //TODO fhaha add not in formula
+  mv_mlt(smCgI,svMovementI,svMovenmentg);
+  Real z = svMovenmentg->ve[2];
+
   if(sDeltaTime <= 6){
     sGuideNormal = 0;
     sGuideLand = 0;
   }
   else if(sDeltaTime <= 8){
-    //sGuideNormal = (sDeltaTime - 6) / 2.0 * ( k1fai * );
+    sGuideNormal = (sDeltaTime - 6) / 2.0 * ( k1fai * deltaTheta + k2fai * deltaH );
+    sGuideLand = (sDeltaTime - 6) / 2.0 * (k1psi * sEpsilon + k2psi * z);
+  }
+  else {
+    if(sH <= 29500 /* TODO && flying up */){
+      sGuideNormal = k1fai * deltaTheta + k2fai * deltaH;
+      sGuideLand = k1psi * sEpsilon * k2psi * z;
+    }
+    else if(sH <= 30000 /* TODO && flying up */ ){
+      sGuideNormal = (3000 - sH)/500 * (k1fai * deltaTheta + k2fai * deltaH);
+      sGuideLand = (30000 - sH)/500 * (k1psi * sEpsilon + k2psi * z);
+    }
+    else if( sH <= 36000 /* TODO && flying up */ ){
+      sGuideNormal = sGuideLand = 0;
+    }
+    else if( sH < 36500 /* TODO && flying up */ ){
+      sGuideNormal = ( sH - 36000) / 500 * (k1fai * deltaTheta + k2fai * deltaH);
+      sGuideLand = (sH - 36000) / 500 * (k1psi * sEpsilon + k2psi * z);
+    }
+    else{ ///* TODO && flying up  and sH > 36500*/ ){
+      sGuideNormal = k1fai * deltaTheta + k2fai * deltaH;
+      sGuideLand = k1psi * sEpsilon + k2psi * z;
+    }
   }
 }
 
@@ -241,6 +292,9 @@ void init_CoordinateTransformMatrix()
 
   svMovementI = v_get(3);
   v_zero(svMovementI);
+
+  svMovenmentg = v_get(3);
+  v_zero(svMovenmentg);
 
   //step 0.1 TODO check formula
   Real mue0 = ALPHAe * XTSIN(2*B0) * ( 1- ALPHAe * ( 1- 4 * XTSIN(B0/2) * XTSIN(B0 / 2)));
@@ -464,6 +518,8 @@ void update_B()
 void init_AllSVals()
 {
   sDeltaTime = 0;
+  sIsSplited = 0;
+  sUpTime = 0;
   sGuideNormal = 0;
   sGuideLand = 0;
   init_Rxyz();

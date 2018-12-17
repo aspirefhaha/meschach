@@ -8,3 +8,4 @@ typedef struct _naviguide_t {
 	double k2psi;
 } naviguide_t;
 extern naviguide_t naviguide[];
+extern int naviguidecount;
