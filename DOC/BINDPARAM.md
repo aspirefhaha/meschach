@@ -4,6 +4,7 @@
     - B0  (2.1)
     - LAMBDA0 (2.1)
     - H0  (2.1)
+    - g0  (test request)
     - Faie0(2.3.2)
     - Miu0  (2.3.2)
     - init Posture:
