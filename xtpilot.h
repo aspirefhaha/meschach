@@ -9,6 +9,7 @@
 #define XTARCTAN2 atan2
 #define XTARCTAN  atan
 #define XTEXP exp
+#define XTABS abs
 
 #define DELTATIME 0.005 // 5 ms
 
@@ -41,6 +42,11 @@
 #define KCS 1.4 // K coefficient of gas
 #define RSTAR 287.05287 // R* R ocefficent of gas
 #define XT_E 2.718281828 // for nature base
+
+#define RCDELTAFAIM (30 * D2R)
+#define RCDELTAPSIM (30 * D2R)
+#define RCDELTAGAMMAM (30 * D2R)
+#define RCDELTAM    (30 * D2R)
 
 
 #define XT_Tm (0.005)      //5 ms

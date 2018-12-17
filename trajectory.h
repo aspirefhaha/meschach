@@ -1,28 +1,33 @@
 #pragma once
+#include "machine.h"
 
 typedef struct _trj_Hcx_Time_st {
-  double dtime;
-  double height;
+  Real dtime;
+  Real height;
 }trj_Hcx_Time_st;
 
 extern int trj_hcx_time_count ;
 
 extern trj_Hcx_Time_st Trj_hcx_time[];
 
-typedef struct _trj_Thetacx_Time_st {
-  double dtime;
-  double thetacx;
-}trj_Thetacx_Time_st;
+typedef struct _trj_Faic_Thetacx_Time_st {
+  Real dtime;
+  Real faic;
+  Real thetacx;
+  Real reserved;
+}trj_Faic_Thetacx_Time_st;
 
-extern int trj_thetacx_time_count;
+extern int trj_faic_thetacx_time_count;
 
-extern trj_Thetacx_Time_st Trj_thetacx_time[];
+extern trj_Faic_Thetacx_Time_st Trj_faic_thetacx_time[];
 
-typedef struct _trj_Thetacx_Height_st {
-  double height;
-  double thetacx;
-}trj_Thetacx_Height_st;
+typedef struct _trj_Faic_Thetacx_Height_st {
+  Real height;
+  Real faic;
+  Real thetacx;
+  Real reserved;
+}trj_Faic_Thetacx_Height_st;
 
-extern trj_Thetacx_Height_st Trj_thetacx_height[];
+extern trj_Faic_Thetacx_Height_st Trj_faic_thetacx_height[];
 
-extern int trj_thetacx_height_count;
+extern int trj_faic_thetacx_height_count;

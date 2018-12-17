@@ -94,3 +94,6 @@ ctlgain_t ctlgain[] =   {
   {92,6,1.5,4,1},
   {99,6,1.5,4,1}
 };
+
+
+int ctlgain_count = sizeof(ctlgain) / sizeof(ctlgain[0]);

@@ -18,3 +18,8 @@
 \?\d\+\.\?\d*E\?-\?\d*,-\?\d\+\.\?\d*E\?-\?\d*,-\?\d\+\.\?\d*E\?-\?\d*,-\?\d\+\.
 \?\d*E\?-\?\d*\)/\t{\1},/g
 ```
+
+* update trajectoryBZ and Height script
+```SHELL
+sed  -r 's/(^.*$)/{\1},/g' xxx.csv  > xxx.c
+```

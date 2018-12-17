@@ -17,13 +17,17 @@
       - row1  (3.5)
       - row2  (3.5)
     - temperature of air parameters(Ta) (3.5)
-  - guidance coefficents  (4.2)
-    - k1fai,k2fai,k1psi,k2psi
   - flying time series  (4.1)
     - time action height acceleration thetat speed(mach)
     - tdz,tdh,t0,t0+1,t0+2.5,trq,thj,tfl,tzg,tld
+  - guidance coefficents  (4.2)
+    - k1fai,k2fai,k1psi,k2psi
   - Trajectory  (4.2)
     - Thetacx,DeltaTime ( 4.4 before Tfl)
     - Thetacx,Height( 4.4 after Tfl)
     - Hcx,DeltaTime (4.2)
     - Faic,Psic,Gammac (4.4)
+  - rudder control signal
+    - b0
+    - beta 3*2 matrix
+    - alpha 3*2 matrix

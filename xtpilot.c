@@ -3,6 +3,7 @@
 #include "xtpilot.h"
 #include "naviguide.h"
 #include "trajectory.h"
+#include "ctlgain.h"
 
 
 static Real sDeltaTime;
@@ -18,6 +19,7 @@ static MAT * smQMCalc ;   //Quaternion Matrix for update
 
 // matrixes and vectors for coordinate-transformation
 static VEC * svOmegae;
+static VEC * svOmegaI;
 static VEC * svR0; //for calc faie in update B(latitude)
 static VEC * svr;
 static VEC * svRnormal;
@@ -43,9 +45,9 @@ static MAT * smCTE;
 static MAT * smCnb;
 
 //Posture
-static Real sFai;
-static Real sPsi;
-static Real sGamma;
+static Real sFaiI;
+static Real sPsiI;
+static Real sGammaI;
 
 //calc factor in update quaternion
 static VEC * svlk ;
@@ -87,6 +89,216 @@ static VEC * svVb;
 
 static Real sGuideNormal;
 static Real sGuideLand;
+
+static VEC * svA0;
+static VEC * svA1;
+static VEC * svDeltaPostureI;
+
+static VEC * svDelta1K;
+static VEC * svCSMid;     //Control Signal Calc Mid Vector
+
+static Real sRudder1;
+static Real sRudder2;
+static Real sRudder3;
+static Real sRudder4;
+
+static Real sbB0;
+static Real sbAlpha11,sbAlpha12,sbAlpha21,sbAlpha22,sbAlpha31,sbAlpha32;
+static Real sbBeta11,sbBeta12,sbBeta21,sbBeta22,sbBeta31,sbBeta32;
+
+
+
+//TODO
+//bind rudder control three parameters
+void bind_sbB0AlphaBeta()
+{
+
+}
+
+//TODO
+Real get_beta()
+{
+  //TODO
+  return 0;
+}
+
+void calc_ControlSignal()
+{
+  //step 1
+  v_star(svA0,svDeltaPostureI,svDelta1K);
+  vm_mlt(smCIb,svOmegab,svOmegaI);
+  v_star(svA1,svOmegaI,svCSMid);
+  v_add(svDelta1K,svCSMid,svDelta1K);
+
+  //step 2
+  static Real phiink1 = 0,phiink2 = 0,phiout1k1 = 0,phiout1k2=0,phiout2k1=0,phiout2k2=0;
+  static Real phioutk1 = 0, phioutk2 = 0;
+  static Real psiink1 = 0,psiink2 = 0,psiout1k1 = 0,psiout1k2=0,psiout2k1=0,psiout2k2=0;
+  static Real psioutk1 = 0, psioutk2 = 0;
+  Real phiink =svDelta1K->ve[0];
+  Real phiout1k = sbB0 * ( phiink + sbBeta11* phiink1 + sbBeta12 * phiink2)
+                  - sbAlpha11 * phiout1k1 - sbAlpha12 * phiout1k2;
+  Real phiout2k = phiout1k + sbBeta21 * phiout1k1 + sbBeta22 * phiout1k2
+                  - sbAlpha21 * phiout2k1 - sbAlpha22*phiout2k2;
+  Real phioutk = phiout2k + sbBeta31 * phiout2k1 + sbBeta32 * phiout2k2
+                  - sbAlpha31 * phioutk1 - sbAlpha32 * phioutk2;
+  phiout1k2 = phiout1k1;
+  phiout1k1 = phiout1k;
+
+  phiout2k2 = phiout2k1;
+  phiout2k1 = phiout2k;
+
+  phiink2 = phiink1;
+  phiink1 = phiink;
+
+  phioutk2 = phioutk1;
+  phioutk1 = phioutk;
+
+  Real psiink = svDelta1K->ve[1];
+  if(sH > 34000 && sH < 35000){
+    svDelta1K->ve[1] + svA0->ve[1] * get_beta();
+  }
+  else if(sH <=34000 && sH > 33000){
+    svDelta1K->ve[1] + svA0->ve[1] * get_beta() * (sH - 33000)/ 1000;
+  }
+
+  Real psiout1k = sbB0 * (psiink + sbBeta11 * psiink1 + sbBeta12 * psiink2)
+                  - sbAlpha11 * psiout1k1 - sbAlpha12 * psiout1k2;
+  Real psiout2k = psiout1k + sbBeta21 * psiout1k1 + sbBeta22 * psiout1k2
+                  - sbAlpha21 * psiout2k1 - sbAlpha22 * psiout2k2;
+  Real psioutk = psiout2k + sbBeta31 * psiout2k1 + sbBeta32 * psiout2k2
+                  - sbAlpha31 * psioutk1 - sbAlpha32 * psioutk2;
+
+  psiout1k2 = psiout1k1;
+  psiout1k1 = psiout1k;
+
+  psiout2k2 = psiout2k1;
+  psiout2k1 = psiout2k;
+
+  psioutk2 = psioutk1;
+  psioutk1 = psioutk;
+
+  psiink2 = psiink1;
+  psiink1 = psiink;
+
+  Real gammaoutk = svDelta1K->ve[2];
+
+  //step 3
+  if( XTABS(phioutk) >= RCDELTAFAIM ){
+    phioutk = SIGNFUNC(phioutk) * RCDELTAFAIM;
+  }
+  if(XTABS(psioutk) >= RCDELTAPSIM){
+    psioutk = SIGNFUNC(psioutk) * RCDELTAPSIM;
+  }
+  if(XTABS(gammaoutk) >= RCDELTAGAMMAM){
+    gammaoutk = SIGNFUNC(gammaoutk) * RCDELTAGAMMAM;
+  }
+
+  //step 4
+  sRudder1 = - phioutk - psioutk + gammaoutk;
+  sRudder2 = - phioutk + psioutk + gammaoutk;
+  sRudder3 = phioutk + psioutk + gammaoutk;
+  sRudder4 = phioutk - psioutk + gammaoutk;
+
+  //step 5
+  if(XTABS(sRudder1) >= RCDELTAM){
+    sRudder1 = SIGNFUNC(sRudder1) * RCDELTAM;
+  }
+  if(XTABS(sRudder2) >= RCDELTAM){
+    sRudder2 = SIGNFUNC(sRudder2) * RCDELTAM;
+  }
+  if(XTABS(sRudder3) >= RCDELTAM){
+    sRudder3 = SIGNFUNC(sRudder3) * RCDELTAM;
+  }
+  if(XTABS(sRudder4) >= RCDELTAM){
+    sRudder4 = SIGNFUNC(sRudder4) * RCDELTAM;
+  }
+}
+
+void init_postureControl()
+{
+  svA0 = v_get(3);
+  v_zero(svA0);
+  svA1 = v_get(3);
+  v_zero(svA1);
+  svDeltaPostureI = v_get(3);
+  v_zero(svDeltaPostureI);
+
+  svDelta1K = v_get(3);
+  v_zero(svDelta1K);
+  svCSMid = v_get(3);
+  v_zero(svCSMid);
+}
+
+Real get_faic()
+{
+  int rindex = 0;
+  if(sIsSplited){
+    rindex = trj_faic_thetacx_height_count;
+    while(--rindex>=0){
+      if(Trj_faic_thetacx_height[rindex].height <= sH){
+        return LINEAR_INTER(Trj_faic_thetacx_height,rindex,height,faic,sH);
+      }
+    }
+  }
+  else{
+    rindex = trj_faic_thetacx_time_count;
+    while(--rindex>=0){
+      if(Trj_faic_thetacx_time[rindex].dtime <= sDeltaTime){
+        return LINEAR_INTER(Trj_faic_thetacx_time,rindex,dtime,faic,sDeltaTime);
+      }
+    }
+  }
+}
+
+void calc_deltaPosture()
+{
+  Real * dPos = svDeltaPostureI->ve;
+  Real * a0 = svA0->ve;
+
+  //TODO verify below 2 values are 0
+  Real psic = 0;
+  Real gammac = 0;
+  dPos[0] = sFaiI - get_faic() + sGuideNormal / a0[0];
+  dPos[1] = sPsiI - psic + sGuideLand / a0[1];
+  dPos[2] = sGammaI - gammac;
+}
+
+int get_A01index()
+{
+  int rindex = ctlgain_count;
+  while(--rindex>=0){
+    if(ctlgain[rindex].dtime <= sDeltaTime){
+      return rindex;
+    }
+  }
+  return 0;
+}
+
+void calc_A01faipsi()
+{
+  Real * a0 = svA0->ve;
+  Real * a1 = svA1->ve;
+  int rindex = get_A01index();
+  if(sIsSplited){
+    a0[0] = LINEAR_INTER(ctlgain,rindex,dtime,a0,sDeltaTime);
+    a0[1] = a0[0];//LINEAR_INTER(ctlgain,rindex,dtime,a0,sDeltaTime);
+
+
+    a1[0] = LINEAR_INTER(ctlgain,rindex,dtime,a1,sDeltaTime);
+    a1[1] = a1[0];//LINEAR_INTER(ctlgain,rindex,dtime,a1,sDeltaTime);
+  }
+  else{
+    a0[0]= 15;
+    a0[1] = 15;
+
+    a1[0] = 2.5;
+    a1[1] = 2.5;
+
+  }
+  a0[2] = LINEAR_INTER(ctlgain,rindex,dtime,a0gamma,sDeltaTime);
+  a1[2] = LINEAR_INTER(ctlgain,rindex,dtime,a1gamma,sDeltaTime);
+}
 
 void init_Guidance()
 {
@@ -132,18 +344,18 @@ Real get_trajectoryTheta()
 {
   int rindex = 0;
   if(sIsSplited){
-    rindex = trj_thetacx_height_count;
+    rindex = trj_faic_thetacx_height_count;
     while(--rindex>=0){
-      if(Trj_thetacx_height[rindex].height <= sH){
-        return LINEAR_INTER(Trj_thetacx_height,rindex,height,thetacx,sH);
+      if(Trj_faic_thetacx_height[rindex].height <= sH){
+        return LINEAR_INTER(Trj_faic_thetacx_height,rindex,height,thetacx,sH);
       }
     }
   }
   else{
-    rindex = trj_thetacx_time_count;
+    rindex = trj_faic_thetacx_time_count;
     while(--rindex>=0){
-      if(Trj_thetacx_time[rindex].dtime <= sDeltaTime){
-        return LINEAR_INTER(Trj_thetacx_time,rindex,dtime,thetacx,sDeltaTime);
+      if(Trj_faic_thetacx_time[rindex].dtime <= sDeltaTime){
+        return LINEAR_INTER(Trj_faic_thetacx_time,rindex,dtime,thetacx,sDeltaTime);
       }
     }
   }
@@ -250,8 +462,8 @@ void update_CoordinateTransformationMatrix()
   m_mlt(smCgI,Ry(A0),smCgI);
 
   //Calc CbI
-  m_mlt(Rx(sGamma),Ry(sPsi),smCbI);
-  m_mlt(smCbI,Rz(sFai),smCbI);
+  m_mlt(Rx(sGammaI),Ry(sPsiI),smCbI);
+  m_mlt(smCbI,Rz(sFaiI),smCbI);
 
   //Calc CgE
   m_mlt(Ry(- XT_PI /2 - A0),Rx(B0),smCgE);
@@ -283,6 +495,9 @@ void init_CoordinateTransformMatrix()
   svOmegae->ve[0] = XTCOS(B0) * XTCOS(A0);
   svOmegae->ve[1] = XTSIN(B0);
   svOmegae->ve[2] = - XTCOS(B0) * XTSIN(A0);
+
+  svOmegaI = v_get(3);
+  //TODO verify omega I no need to init
 
   svr = v_get(3);
 
@@ -383,9 +598,9 @@ void init_Rxyz()
 
 void init_Posture()
 {
-  sFai = XT_PI /2;
-  sPsi = 0;
-  sGamma = 2 * XT_PI / 180;
+  sFaiI = XT_PI /2;
+  sPsiI = 0;
+  sGammaI = 2 * XT_PI / 180;
 }
 
 void calc_CIb_CbI()
@@ -406,9 +621,9 @@ void calc_CIb_CbI()
 //TODO use CIb
 void update_Posture()
 {
-  sPsi =  XTARCSIN(-smCbI->me[2][0]);
-  sFai = XTARCTAN2(smCbI->me[0][1],smCbI->me[0][0]); // -pi <= fai <= pi
-  sGamma =  XTARCTAN2(smCbI->me[1][2],smCbI->me[2][2]);
+  sPsiI =  XTARCSIN(-smCbI->me[2][0]);
+  sFaiI = XTARCTAN2(smCbI->me[0][1],smCbI->me[0][0]); // -pi <= fai <= pi
+  sGammaI =  XTARCTAN2(smCbI->me[1][2],smCbI->me[2][2]);
 }
 
 #ifdef USE_BODYOMEGA
@@ -442,12 +657,12 @@ VEC * init_Quaternion()
 {
   svQn = v_get(4);
   smQMCalc = m_get(4,4);
-  Real cosg2 = XTCOS(sGamma/2);
-  Real cosp2 = XTCOS(sPsi/2);
-  Real cosf2 = XTCOS(sFai/2);
-  Real sing2 = XTSIN(sGamma/2);
-  Real sinp2 = XTSIN(sPsi/2);
-  Real sinf2 = XTSIN(sFai/2);
+  Real cosg2 = XTCOS(sGammaI/2);
+  Real cosp2 = XTCOS(sPsiI/2);
+  Real cosf2 = XTCOS(sFaiI/2);
+  Real sing2 = XTSIN(sGammaI/2);
+  Real sinp2 = XTSIN(sPsiI/2);
+  Real sinf2 = XTSIN(sFaiI/2);
   svQn->ve[0] = cosg2 * cosp2 * cosf2 + sing2 * sinp2 * sinf2;
   svQn->ve[1] = sing2 * cosp2 * cosf2 - cosg2 * sinp2 * sinf2;
   svQn->ve[2] = cosg2 * sinp2 * cosf2 + sing2 * cosp2 * sinf2;
@@ -536,6 +751,8 @@ void init_AllSVals()
   init_naviProc();
 
   init_Guidance();
+
+  init_postureControl();
 
 }
 
